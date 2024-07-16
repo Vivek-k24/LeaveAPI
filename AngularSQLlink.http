@@ -1,0 +1,6 @@
+@AngularSQLlink_HostAddress = http://localhost:5080
+
+GET {{AngularSQLlink_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
