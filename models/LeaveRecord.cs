@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace AngularSQLlink.Models
+namespace AngularSQLlink.Data
 {
     public class LeaveRecord
     {
@@ -12,6 +12,6 @@ namespace AngularSQLlink.Models
         public int Scheduled { get; set; }
         public int Taken { get; set; }
         public int Balance { get; set; }
-        public int LeavePeriod { get; set; }
+        public string LeavePeriod { get; set; }
     }
 }

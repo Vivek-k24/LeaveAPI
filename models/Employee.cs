@@ -1,4 +1,4 @@
-﻿namespace AngularSQLlink.Models
+﻿namespace AngularSQLlink.Data
 {
     public class Employee
     {

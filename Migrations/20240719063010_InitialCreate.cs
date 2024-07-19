@@ -16,10 +16,11 @@ namespace LeaveAPI.Migrations
                 {
                     EmployeeId = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
-                    Name = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
-                    Location = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
-                    JobTitle = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
-                    SubUnit = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false)
+                    Name = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Location = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    JobTitle = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    SubUnit = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    IsCurrentEmployee = table.Column<bool>(type: "bit", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -33,38 +34,28 @@ namespace LeaveAPI.Migrations
                     LeaveRecordId = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
                     EmployeeId = table.Column<int>(type: "int", nullable: false),
-                    LeaveType = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
+                    LeaveType = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     Entitlements = table.Column<int>(type: "int", nullable: false),
                     PendingApproval = table.Column<int>(type: "int", nullable: false),
                     Scheduled = table.Column<int>(type: "int", nullable: false),
                     Taken = table.Column<int>(type: "int", nullable: false),
-                    Balance = table.Column<int>(type: "int", nullable: false)
+                    Balance = table.Column<int>(type: "int", nullable: false),
+                    LeavePeriod = table.Column<string>(type: "nvarchar(max)", nullable: false)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_LeaveRecords", x => x.LeaveRecordId);
-                    table.ForeignKey(
-                        name: "FK_LeaveRecords_Employees_EmployeeId",
-                        column: x => x.EmployeeId,
-                        principalTable: "Employees",
-                        principalColumn: "EmployeeId",
-                        onDelete: ReferentialAction.Cascade);
                 });
-
-            migrationBuilder.CreateIndex(
-                name: "IX_LeaveRecords_EmployeeId",
-                table: "LeaveRecords",
-                column: "EmployeeId");
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
-                name: "LeaveRecords");
+                name: "Employees");
 
             migrationBuilder.DropTable(
-                name: "Employees");
+                name: "LeaveRecords");
         }
     }
 }

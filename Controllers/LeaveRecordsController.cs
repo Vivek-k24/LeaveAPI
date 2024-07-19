@@ -1,10 +1,9 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using System.Collections.Generic;
+using Microsoft.Extensions.Logging;
+using System.Linq;
 using Microsoft.EntityFrameworkCore;
 using AngularSQLlink.Data;
-using AngularSQLlink.Models;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace AngularSQLlink.Controllers
 {
@@ -13,122 +12,94 @@ namespace AngularSQLlink.Controllers
     public class LeaveRecordsController : ControllerBase
     {
         private readonly YourDbContext _context;
+        private readonly ILogger<LeaveRecordsController> _logger;
 
-        public LeaveRecordsController(YourDbContext context)
+        public LeaveRecordsController(YourDbContext context, ILogger<LeaveRecordsController> logger)
         {
             _context = context;
+            _logger = logger;
         }
 
-        // GET: api/LeaveRecords
-        [HttpGet]
-        public async Task<ActionResult<IEnumerable<LeaveRecord>>> GetLeaveRecords()
+        [HttpGet("employee")]
+        public IActionResult GetLeaveRecordsByEmployee(string employeeName, string leavePeriod)
         {
-            return await _context.LeaveRecords.ToListAsync();
+            _logger.LogInformation("Received request for employee leave records: {EmployeeName}, {LeavePeriod}", employeeName, leavePeriod);
+
+            try
+            {
+                var employee = _context.Employees.FirstOrDefault(e => e.Name == employeeName);
+                if (employee == null)
+                {
+                    _logger.LogWarning("Employee not found: {EmployeeName}", employeeName);
+                    return NotFound("Employee not found.");
+                }
+
+                var leaveRecords = _context.LeaveRecords
+                    .Where(lr => lr.EmployeeId == employee.EmployeeId && lr.LeavePeriod == leavePeriod)
+                    .ToList();
+
+                if (!leaveRecords.Any())
+                {
+                    _logger.LogInformation("No leave records found for employee: {EmployeeName}, period: {LeavePeriod}", employeeName, leavePeriod);
+                    return NotFound("No leave records found for the specified employee and period.");
+                }
+
+                _logger.LogInformation("Returning {RecordCount} leave records for employee: {EmployeeName}, period: {LeavePeriod}", leaveRecords.Count, employeeName, leavePeriod);
+                return Ok(leaveRecords);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error processing request for employee leave records: {EmployeeName}, {LeavePeriod}", employeeName, leavePeriod);
+                return StatusCode(500, "Internal server error");
+            }
         }
 
-        // POST: api/LeaveRecords
-        [HttpPost]
-        public async Task<ActionResult<LeaveRecord>> PostLeaveRecord(LeaveRecord leaveRecord)
+
+        [HttpGet("filters")]
+        public IActionResult GetLeaveRecordsByFilters(string leaveType, string leavePeriod, string location, string subUnit, string jobTitle, bool includePastEmployees)
         {
-            _context.LeaveRecords.Add(leaveRecord);
-            await _context.SaveChangesAsync();
-            return CreatedAtAction(nameof(GetLeaveRecord), new { id = leaveRecord.LeaveRecordId }, leaveRecord);
+            _logger.LogInformation("Received request for leave records by filters: {LeaveType}, {LeavePeriod}, {Location}, {SubUnit}, {JobTitle}, {IncludePastEmployees}", leaveType, leavePeriod, location, subUnit, jobTitle, includePastEmployees);
+
+            try
+            {
+                var employees = _context.Employees.AsQueryable();
+
+                if (!includePastEmployees)
+                {
+                    employees = employees.Where(e => e.IsCurrentEmployee);
+                }
+
+                var leaveRecords = _context.LeaveRecords
+                    .Join(employees, lr => lr.EmployeeId, e => e.EmployeeId, (lr, e) => new { lr, e })
+                    .Where(joined => (string.IsNullOrEmpty(leaveType) || joined.lr.LeaveType == leaveType) &&
+                                     (string.IsNullOrEmpty(leavePeriod) || joined.lr.LeavePeriod == leavePeriod) &&
+                                     (string.IsNullOrEmpty(location) || joined.e.Location == location) &&
+                                     (string.IsNullOrEmpty(subUnit) || joined.e.SubUnit == subUnit) &&
+                                     (string.IsNullOrEmpty(jobTitle) || joined.e.JobTitle == jobTitle))
+                    .Select(joined => new
+                    {
+                        joined.lr.LeaveRecordId,
+                        joined.e.Name,
+                        joined.lr.LeaveType,
+                        joined.lr.Entitlements,
+                        joined.lr.PendingApproval,
+                        joined.lr.Scheduled,
+                        joined.lr.Taken,
+                        joined.lr.Balance,
+                        joined.lr.LeavePeriod
+                    })
+                    .ToList();
+
+                if (!leaveRecords.Any())
+                    return NotFound("No leave records found for the specified filters.");
+
+                return Ok(leaveRecords);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error processing request for leave records by filters");
+                return StatusCode(500, "Internal server error");
+            }
         }
-
-        // GET: api/LeaveRecords/5
-        [HttpGet("{id}")]
-        public async Task<ActionResult<LeaveRecord>> GetLeaveRecord(int id)
-        {
-            var leaveRecord = await _context.LeaveRecords.FindAsync(id);
-            if (leaveRecord == null)
-            {
-                return NotFound();
-            }
-            return leaveRecord;
-        }
-
-        // PUT: api/LeaveRecords/5
-        [HttpPut("{id}")]
-        public async Task<IActionResult> PutLeaveRecord(int id, LeaveRecord leaveRecord)
-        {
-            if (id != leaveRecord.LeaveRecordId)
-            {
-                return BadRequest();
-            }
-
-            _context.Entry(leaveRecord).State = EntityState.Modified;
-            await _context.SaveChangesAsync();
-            return NoContent();
-        }
-
-        // DELETE: api/LeaveRecords/5
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteLeaveRecord(int id)
-        {
-            var leaveRecord = await _context.LeaveRecords.FindAsync(id);
-            if (leaveRecord == null)
-            {
-                return NotFound();
-            }
-
-            _context.LeaveRecords.Remove(leaveRecord);
-            await _context.SaveChangesAsync();
-            return NoContent();
-        }
-
-        // GET: api/LeaveRecords/filter
-        [HttpGet("filter")]
-        public async Task<ActionResult<IEnumerable<LeaveRecord>>> GetFilteredLeaveRecords([FromQuery] LeaveRecordFilter filter)
-        {
-            var query = _context.LeaveRecords.AsQueryable();
-
-            if (!string.IsNullOrEmpty(filter.LeaveType))
-            {
-                query = query.Where(lr => lr.LeaveType == filter.LeaveType);
-            }
-
-            if (!string.IsNullOrEmpty(filter.EmployeeName))
-            {
-                var employees = _context.Employees.Where(e => e.Name.Contains(filter.EmployeeName)).Select(e => e.EmployeeId).ToList();
-                query = query.Where(lr => employees.Contains(lr.EmployeeId));
-            }
-
-            if (filter.LeavePeriod.HasValue)
-            {
-                query = query.Where(lr => lr.LeavePeriod == filter.LeavePeriod.Value);
-            }
-
-            if (!string.IsNullOrEmpty(filter.Location))
-            {
-                var employees = _context.Employees.Where(e => e.Location == filter.Location).Select(e => e.EmployeeId).ToList();
-                query = query.Where(lr => employees.Contains(lr.EmployeeId));
-            }
-
-            if (!string.IsNullOrEmpty(filter.SubUnit))
-            {
-                var employees = _context.Employees.Where(e => e.SubUnit == filter.SubUnit).Select(e => e.EmployeeId).ToList();
-                query = query.Where(lr => employees.Contains(lr.EmployeeId));
-            }
-
-            if (!string.IsNullOrEmpty(filter.JobTitle))
-            {
-                var employees = _context.Employees.Where(e => e.JobTitle == filter.JobTitle).Select(e => e.EmployeeId).ToList();
-                query = query.Where(lr => employees.Contains(lr.EmployeeId));
-            }
-
-            var results = await query.ToListAsync();
-            return Ok(results);
-        }
-    }
-
-    public class LeaveRecordFilter
-    {
-        public string LeaveType { get; set; }
-        public string EmployeeName { get; set; }
-        public int? LeavePeriod { get; set; } // Changed to LeavePeriod
-        public string Location { get; set; }
-        public string SubUnit { get; set; }
-        public string JobTitle { get; set; }
-        public bool? IncludePastEmployees { get; set; }
     }
 }

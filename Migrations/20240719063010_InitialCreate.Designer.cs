@@ -11,7 +11,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace LeaveAPI.Migrations
 {
     [DbContext(typeof(YourDbContext))]
-    [Migration("20240717044800_InitialCreate")]
+    [Migration("20240719063010_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -24,7 +24,7 @@ namespace LeaveAPI.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
-            modelBuilder.Entity("AngularSQLlink.Models.Employee", b =>
+            modelBuilder.Entity("AngularSQLlink.Data.Employee", b =>
                 {
                     b.Property<int>("EmployeeId")
                         .ValueGeneratedOnAdd()
@@ -32,32 +32,31 @@ namespace LeaveAPI.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("EmployeeId"));
 
+                    b.Property<bool>("IsCurrentEmployee")
+                        .HasColumnType("bit");
+
                     b.Property<string>("JobTitle")
                         .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Location")
                         .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("SubUnit")
                         .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
+                        .HasColumnType("nvarchar(max)");
 
                     b.HasKey("EmployeeId");
 
                     b.ToTable("Employees");
                 });
 
-            modelBuilder.Entity("AngularSQLlink.Models.LeaveRecord", b =>
+            modelBuilder.Entity("AngularSQLlink.Data.LeaveRecord", b =>
                 {
                     b.Property<int>("LeaveRecordId")
                         .ValueGeneratedOnAdd()
@@ -74,10 +73,13 @@ namespace LeaveAPI.Migrations
                     b.Property<int>("Entitlements")
                         .HasColumnType("int");
 
+                    b.Property<string>("LeavePeriod")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("LeaveType")
                         .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<int>("PendingApproval")
                         .HasColumnType("int");
@@ -90,18 +92,7 @@ namespace LeaveAPI.Migrations
 
                     b.HasKey("LeaveRecordId");
 
-                    b.HasIndex("EmployeeId");
-
                     b.ToTable("LeaveRecords");
-                });
-
-            modelBuilder.Entity("AngularSQLlink.Models.LeaveRecord", b =>
-                {
-                    b.HasOne("AngularSQLlink.Models.Employee", null)
-                        .WithMany()
-                        .HasForeignKey("EmployeeId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
                 });
 #pragma warning restore 612, 618
         }
