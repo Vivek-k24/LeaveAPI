@@ -21,7 +21,9 @@ namespace AngularSQLlink
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddDbContext<YourDbContext>(options =>
-                options.UseSqlServer(Configuration.GetConnectionString("DefaultConnection")));
+                options.UseSqlServer(Configuration.GetConnectionString("DefaultConnection"))
+                .EnableSensitiveDataLogging()
+                .LogTo(Console.WriteLine, LogLevel.Information));
 
             services.AddControllers();
             services.AddCors(options =>
@@ -30,7 +32,7 @@ namespace AngularSQLlink
                     builder.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader());
             });
 
-            // Register the Swagger generator, defining one or more Swagger documents
+            
             services.AddSwaggerGen(c =>
             {
                 c.SwaggerDoc("v1", new OpenApiInfo { Title = "Leave API", Version = "v1" });

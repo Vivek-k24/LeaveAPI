@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging;
 using System.Linq;
 using Microsoft.EntityFrameworkCore;
 using AngularSQLlink.Data;
+using System.Web;
 
 namespace AngularSQLlink.Controllers
 {
@@ -58,7 +59,15 @@ namespace AngularSQLlink.Controllers
         [HttpGet("filters")]
         public IActionResult GetLeaveRecordsByFilters(string leaveType, string leavePeriod, string location, string subUnit, string jobTitle, bool includePastEmployees)
         {
-            _logger.LogInformation("Received request for leave records by filters: {LeaveType}, {LeavePeriod}, {Location}, {SubUnit}, {JobTitle}, {IncludePastEmployees}", leaveType, leavePeriod, location, subUnit, jobTitle, includePastEmployees);
+            // Decode the URL parameters (not necessary if using standard encoding)
+            leaveType = HttpUtility.UrlDecode(leaveType);
+            leavePeriod = HttpUtility.UrlDecode(leavePeriod);
+            location = HttpUtility.UrlDecode(location);
+            subUnit = HttpUtility.UrlDecode(subUnit);
+            jobTitle = HttpUtility.UrlDecode(jobTitle);
+
+            _logger.LogInformation("Received request for leave records by filters: {LeaveType}, {LeavePeriod}, {Location}, {SubUnit}, {JobTitle}, {IncludePastEmployees}",
+                leaveType, leavePeriod, location, subUnit, jobTitle, includePastEmployees);
 
             try
             {
@@ -101,5 +110,6 @@ namespace AngularSQLlink.Controllers
                 return StatusCode(500, "Internal server error");
             }
         }
+
     }
 }
